@@ -1,0 +1,115 @@
+
+todo:
+
+check that i have bolts + nuts!
+	needs to be +8mm, maybe 12? 16?
+	32 per digit?
+	32 * 8 == 256
+	or wedges? [wedges]
+
+librecad surround to work out wire lengths
+	mounting holes in corner peices [done]
+	wedges [done]
+	try to fit parts better [done]
+	test cut [done, needs diags]
+	
+
+Cut up strips, solder wires
+work out board layout + wires
+make a board
+test with cut segments
+design backing [done]
+laser cut backing
+shop for glue sticks
+
+2803: right hand pins arn't pairs
+com - can ignore it.
+
+4094:
+vdd: +5v
+Vss: gnd
+
+io con:
+
+
++5V		x
+GND		x
+strobe		x	a	b
+
+clock		x	a	b
+data		x		b
+data out
+output enable	x		
+
+1	gnd
+2	+5v
+3	oe		8
+4	gnd
+5	data out	
+6	strobe		9
+7	data in		11
+8	clock		10
+
+http://www.maximintegrated.com/app-notes/index.mvp/id/3212
+
+http://mbed.org/users/wim/code/mbed_starburst/
+
+smallest unit is 5cm
+
+lhs windows are 77 x 86cm
+
+4 x diagonals		18.4
+2 x horizontals		9
+2 x top and bottom	17.0
+4 x sides		16.
+2 x central bits	14
+
+height			32
+
+
+so height in window = 55, 10 segments, 
+
+			(segments)
+4 x diagonials		6 x 4	24
+2 x horizontals		3 x 2	6
+2 x top and bottom	7 x 2	14
+4 x sides		5 x 4	20
+2 x central bits	5 x 2	10
+				--
+	total per display	74
+			=	3.7m
+
+for 6 displays = 444 segments = 2220,
+for 9 displays = 666 segments = 3330,
+
+need to switch 14 * 9 segments == 126
+
+need 15.75 ULN2083's, so either chain different chars together or to 2 each,
+so 18, which would give us 4 extra outputs so maybe do 16 segment dislays
+with . as well.
+
+maybe look at fonts
+
+i2c io expanders?
+spi io expanders?
+
+a cheap mcu per char?
+
+driver boards:
+
+2 x darlington
+2 x shift
+3 x 8 way connector
+
+
+
+gnd
++5V
+clock
+data in
+data out
+strobe
+oe
+
+http://bobdasquirrel.blogspot.co.uk/2011/09/16-segment-led-from-active-surplus.html
+http://windways.org/personal_page/stockticker/
