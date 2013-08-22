@@ -171,12 +171,8 @@ font = {
 if __name__ == "__main__":
   ks = font.keys()
   ks.sort()
-  for k in [chr(c) for c in range(ord('5'), 127)]:
-    print k
-    seg_char(font[k])
-  
-  
-
-
-
-
+  for k in [chr(c) for c in range(ord(' '), 127)]:
+    if font[k] != 0xffff:
+#      print k
+      print "0b{0:016b} {1:s}".format(font[k], k)
+#      seg_char(font[k])
