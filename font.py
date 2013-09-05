@@ -1,6 +1,10 @@
 #!/usr/bin/env python
+
 import sys, serial, time, random
 import readline
+from sixteensegfont import font
+
+#font = {}
 
 #
 # the bit order is different on the hardware due to the order of the
@@ -81,21 +85,7 @@ def seg_char(bits):
   o += set(bits & (1 << 15), "-")
   print o    
 
-if __name__ == "__main__":
-    font = {}
-
-    for file in sys.argv[1:]:
-        f = open(file, 'r')
-        for l in f:
-            try:
-                bin, k = l.strip().split(' ')
-            except:
-                bin = l.strip().split(' ')[0]
-                k = ' '
-            font[k] = int(bin, 2)
-#            print "0b{0:016b} {1:s} // 0x{2:s}".format(font[k], k, mangle(font[k]))
-        f.close()
-
+def dump_arduino(font):
     ks = font.keys()
     ks.sort()
     
@@ -106,12 +96,35 @@ if __name__ == "__main__":
     
     for k in [chr(c) for c in range(ord(' '), 127)]:
         print "\t0b{0:016b}, // {1:s} - {0:04x} - {3:s}".format(font[k], k, font[k], mangle(font[k]))
-#        seg_char(font[k])
     
     print "};"
 
-#    exit(0)
-
+def dump_python(font):
+    # broken, needs to escape ' & \
+    ks = font.keys()
+    ks.sort()
+    
+    print "#!/usr/bin/env python"
+    print
+    print "font = {"
+    
+    for k in [chr(c) for c in range(ord(' '), 127)]:
+        print "\t'{1:s}': 0x{0:04x}, # {0:04x} - 0b{0:016b}".format(font[k], k, font[k], mangle(font[k]))
+    
+    print "}"
+    
+if __name__ == "__main__":
+    for file in sys.argv[1:]:
+        f = open(file, 'r')
+        for l in f:
+            try:
+                bin, k = l.strip().split(' ')
+            except:
+                bin = l.strip().split(' ')[0]
+                k = ' '
+            font[k] = int(bin, 2)
+        f.close()
+        
     dev = "/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_74137363737351B0F0D1-if00"
     
     s = serial.Serial(dev, 9600)
