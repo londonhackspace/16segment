@@ -9,28 +9,35 @@
 
 #include <SPI.h>
 #include <avr/pgmspace.h>
+#include <stdlib.h>
 
 /*
 
 with the outputs at the top, fron left to right:
 
 pin    output bit (zero indexed!)
-1          3
-2          2
-3          1
-4          0
-5          7
-6          6
-7          5
-8          4
-9          11
-10         10
-11         9
-12         8
-13         15
-14         14
-15         13
-16         12
+1          3  15
+2          2  14
+3          1  13
+4          0  12
+5          7  11
+6          6  10
+7          5   9
+8          4   8
+9          11  7
+10         10  6
+11         9   5 
+12         8   4
+13         15  3
+14         14  2
+15         13  1
+16         12  0
+
+last nibble -> first
+first -> last
+middle 2 swap
+
+c387 -> 783c
 
 */
 
@@ -45,8 +52,9 @@ void shift_clear(void) {
   
   for (i = 0 ; i < 16 ; i++) {
     digitalWrite(CLOCK, HIGH);
-//    delayMicroseconds(1);
+    delayMicroseconds(1);
     digitalWrite(CLOCK, LOW);
+    delayMicroseconds(1);
   }
 }
 
@@ -57,7 +65,7 @@ void shift_bit(byte b) {
 
 void shift(void) {
   digitalWrite(CLOCK, HIGH);
-//  delayMicroseconds(1);
+  delayMicroseconds(1);
   digitalWrite(CLOCK, LOW);  
 }
 
@@ -66,6 +74,21 @@ void send_16(const uint16_t data) {
   for (i = 0 ; i < 16 ; i++) {
     shift_bit((data & (1 << i)) >> i);
   }
+}
+
+void blank(void) {
+  int i;
+
+  digitalWrite(STROBE, LOW); // no data out (yet)
+  delayMicroseconds(1);
+
+  for (i = 0; i < 6 ; i++) {
+    shift_clear();
+  }
+  delayMicroseconds(1);
+
+  digitalWrite(STROBE, HIGH); // no data out (yet)
+
 }
 
 void setup() {                
@@ -90,16 +113,10 @@ void setup() {
 
   Serial.begin(9600);
   Serial.println("Hello World!");
+  blank();
 
-//  uint16_t shift_thing = 0b1010101010101010;
-
-//  Serial.println(shift_thing, HEX);
   Serial.println(">");
-  
-  shift_clear();  
-  
-  send_16(0xffff);
-  
+    
   digitalWrite(STROBE, HIGH); // put the data in the register
   
   digitalWrite(OE, LOW);
@@ -107,14 +124,18 @@ void setup() {
   
 }
 
+#define LOOKING 0
+#define RESET 1
+#define WRITE 2
 
-int cycle_counter = 0;
-
-uint16_t state = 0;
+int state = LOOKING;
+uint16_t writeval;
+int writepos;
+char writestr[5];
 
 void loop() {
   int i;
-  int pin = 16;
+  char c;
 
 //  for (i = 0 ; i < 5 ; i++)
 //  {
@@ -122,40 +143,44 @@ void loop() {
 //  }
 //  digitalWrite(OUTPUT, LOW); // switch off output
 
-  pin = Serial.parseInt();
-
-  if (pin == 0) {
-     return;
+  if (Serial.available() > 0) {
+    c = Serial.read();
+//    Serial.write(c);
+    if (state == LOOKING) {
+      switch (c) {
+        case 'r':
+//          Serial.println("resetting");
+          blank();
+          break;
+        case 'w':
+//          Serial.println("ready for 4 hex chars");
+          state = WRITE;
+          writepos = 0;
+          writestr[4] = '\0';
+          break;
+        default:
+          Serial.println("usage: 'r' to reset, 'wxxxx' with x = 4 hex digits");
+          break;
+      }
+    } else if (state == WRITE) {
+      writestr[writepos] = c;
+/*      Serial.print("got: ");
+      Serial.write(c);
+      Serial.print(" ");
+      Serial.println(writepos);*/
+//      writeval += hex << (writepos * 4)
+      writepos++;
+      if (writepos > 3) {
+        writeval = strtoul(writestr, NULL, 16);
+//        Serial.print("Sending: ");
+//        Serial.println(writeval, HEX);
+        digitalWrite(STROBE, LOW); // no data out (yet)
+        send_16(writeval);
+        digitalWrite(STROBE, HIGH); // data out
+        writepos = 0;
+        state = LOOKING;
+      }
+    }
   }
-
-  pin--;
-
-  if (pin > 16) {
-      Serial.println("1-16 please");
-  } else {
-      Serial.print("pin ");
-      Serial.println(pin);
-      state = state ^ (1 << pin);
-      Serial.println(state, HEX);
-  }
-
-  delay(250);
-  digitalWrite(STROBE, LOW); // no data out (yet)
-  send_16(state);
-//  send_16(1 << cycle_counter);
-//  send_16(0xffff);
-  cycle_counter++;
-  
-  if (cycle_counter == 16) {
-      cycle_counter = 0;
-  }
-  digitalWrite(STROBE, HIGH); // data out
-//  delay(250);
-//  digitalWrite(STROBE, LOW); // no data out (yet)
-//  send_16(0xffff);
-//  digitalWrite(STROBE, HIGH); // data out
-
-  
-//  digitalWrite(OUTPUT, HIGH); // output off  
 }
 
