@@ -1,6 +1,10 @@
 #!/usr/bin/env python
+
 import sys, serial, time, random
 import readline
+from sixteensegfont import font
+
+#font = {}
 
 #
 # the bit order is different on the hardware due to the order of the
@@ -81,21 +85,7 @@ def seg_char(bits):
   o += set(bits & (1 << 15), "-")
   print o    
 
-if __name__ == "__main__":
-    font = {}
-
-    for file in sys.argv[1:]:
-        f = open(file, 'r')
-        for l in f:
-            try:
-                bin, k = l.strip().split(' ')
-            except:
-                bin = l.strip().split(' ')[0]
-                k = ' '
-            font[k] = int(bin, 2)
-#            print "0b{0:016b} {1:s} // 0x{2:s}".format(font[k], k, mangle(font[k]))
-        f.close()
-
+def dump_arduino(font):
     ks = font.keys()
     ks.sort()
     
@@ -106,24 +96,48 @@ if __name__ == "__main__":
     
     for k in [chr(c) for c in range(ord(' '), 127)]:
         print "\t0b{0:016b}, // {1:s} - {0:04x} - {3:s}".format(font[k], k, font[k], mangle(font[k]))
-#        seg_char(font[k])
     
     print "};"
 
-#    exit(0)
-
+def dump_python(font):
+    # broken, needs to escape ' & \
+    ks = font.keys()
+    ks.sort()
+    
+    print "#!/usr/bin/env python"
+    print
+    print "font = {"
+    
+    for k in [chr(c) for c in range(ord(' '), 127)]:
+        print "\t'{1:s}': 0x{0:04x}, # {0:04x} - 0b{0:016b}".format(font[k], k, font[k], mangle(font[k]))
+    
+    print "}"
+    
+if __name__ == "__main__":
+    for file in sys.argv[1:]:
+        f = open(file, 'r')
+        for l in f:
+            try:
+                bin, k = l.strip().split(' ')
+            except:
+                bin = l.strip().split(' ')[0]
+                k = ' '
+            font[k] = int(bin, 2)
+        f.close()
+        
     dev = "/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_74137363737351B0F0D1-if00"
     
     s = serial.Serial(dev, 9600)
 
     def message(str):
         for c in str:
-            s.write("w" + mangle(font[c.upper()]))
+            s.write("w" + mangle(font[c]))
             time.sleep(0.5)
 
     def clear():
         for i in range(0,8):
-            s.write("r")
+#            s.write("r")
+            s.write("w0000")
             time.sleep(0.2)
         time.sleep(0.2)
 
@@ -133,59 +147,58 @@ if __name__ == "__main__":
             time.sleep(0.2)
 
     clear()
-    while 1:
-        for c in [chr(c) for c in range(ord(' '), 127)]:
-            s.write("w" + mangle(font[c]))
-            time.sleep(0.75)
 
-    exit(0)
-
+    def info():
+        print "'quit' to quit"
+        print "'rhhhh' or 'rbbbbbbbbbbbbbbbb' to write a raw char in hex or binary"
+        print "'wstring' to display text"
+        print "'a' to print all chars"
+        print "'b' to cycle through all bits"
+        print "'c' to clear the display"
+    
+    info()
     readline.parse_and_bind('tab: complete')
     while True:
-        line = raw_input('Prompt ("quit" to quit): ')
+        line = raw_input('> ')
         line = line.strip()
-        line = line.replace(' ', '')
-        seg_char(int(line,2))
+        if line == 'quit':
+            exit(0)
+        elif line.startswith('w'):
+            message(line[1:])
+        elif line.startswith('r'):
+            line = line.replace(' ', '')
+            line = line[1:]
+            if len(line) == len('ffff'):
+                c = int(line,16)
+            elif len(line) == len('0000111100001111'):
+                c = int(line,2)
+            print "%04x" % (c)
+            seg_char(c)
+            s.write("w" + mangle(c))
+        elif line.startswith('a'):
+            for c in [chr(c) for c in range(ord(' '), 127)]:
+                s.write("w" + mangle(font[c]))
+                time.sleep(0.75)
+        elif line.startswith('b'):
+            for i in range (0,16):
+                print i
+                for j in range(0,7):
+                    o = "w" + mangle(1 << i)
+                    print o
+                    s.write(o)
+                    time.sleep(0.01)
+                    if s.inWaiting() > 0:
+                        print s.read()
+                time.sleep(0.2)
+        elif line.startswith('c'):
+            clear()
+        elif line.startswith('h') or line.startswith('?'):
+            info()
 
     exit(0)
-
-    while 1:
-        for i in range (0,16):
-            print i
-            for j in range(0,7):
-                o = "w" + mangle(1 << i)
-                print o
-                s.write(o)
-                time.sleep(0.01)
-                if s.inWaiting() > 0:
-                    print s.read()
-            time.sleep(0.2)
-
-    exit(0)
-        
-    clear()
-    time.sleep(10)
-    all()
-    time.sleep(10)
-    clear()
-    time.sleep(2)
-    s.flush()
-    exit(0)
-    
-    stime = time.time()
-    state = 'e'
-    while True:
-        if state == 'e':
-            emfcamp()
-        else:
-            s.write("w" + "%04x" % (int(random.random() * 65535)))
-            time.sleep(0.1)
-        if (time.time() - stime ) > 5:
-            stime = time.time()
-            if state == 'e':
-                state = 'r'
-            else:
-                state = 'e'
+            
+#            s.write("w" + "%04x" % (int(random.random() * 65535)))
+#            time.sleep(0.1)
 
 #    while True:
 #        line = raw_input("String>  ")
