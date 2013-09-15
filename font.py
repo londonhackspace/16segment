@@ -135,10 +135,7 @@ if __name__ == "__main__":
             time.sleep(0.5)
 
     def clear():
-        for i in range(0,8):
-#            s.write("r")
-            s.write("w0000")
-            time.sleep(0.2)
+        s.write("r")
         time.sleep(0.2)
 
     def all():
