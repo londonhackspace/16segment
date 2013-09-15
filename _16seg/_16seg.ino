@@ -2,8 +2,8 @@
   Drive the 16 segment led displays
  */
 
-#define OE      8
-#define STROBE  9
+#define OE      8   // active high
+#define STROBE  9   // active high
 #define CLOCK   10
 #define DATA    11
 
@@ -79,6 +79,8 @@ void send_16(const uint16_t data) {
 void blank(void) {
   int i;
 
+  digitalWrite(OE, LOW); // outputs off
+  
   digitalWrite(STROBE, LOW); // no data out (yet)
   delayMicroseconds(1);
 
@@ -97,12 +99,6 @@ void setup() {
   pinMode(OE, OUTPUT); // output enable
   digitalWrite(OE, LOW);  // no output to start with
 
-  // make sure we're not a slave
-//  digitalWrite(SS, HIGH);
-//  SPI.begin();
-//  SPI.setClockDivider(SPI_CLOCK_DIV4); // 16Mhz / 2 = 8Mhz
-
-  // pins for controlling the mic5891 high side driver thats driving the rows
   pinMode(DATA, OUTPUT);
 
   pinMode(CLOCK, OUTPUT);
@@ -137,23 +133,14 @@ void loop() {
   int i;
   char c;
 
-//  for (i = 0 ; i < 5 ; i++)
-//  {
-//      SPI.transfer(buffer[i + (5 * row)]);
-//  }
-//  digitalWrite(OUTPUT, LOW); // switch off output
-
   if (Serial.available() > 0) {
     c = Serial.read();
-//    Serial.write(c);
     if (state == LOOKING) {
       switch (c) {
         case 'r':
-//          Serial.println("resetting");
           blank();
           break;
         case 'w':
-//          Serial.println("ready for 4 hex chars");
           state = WRITE;
           writepos = 0;
           writestr[4] = '\0';
@@ -177,6 +164,8 @@ void loop() {
         digitalWrite(STROBE, LOW); // no data out (yet)
         send_16(writeval);
         digitalWrite(STROBE, HIGH); // data out
+        digitalWrite(OE, HIGH); // outputs on
+        
         writepos = 0;
         state = LOOKING;
       }
