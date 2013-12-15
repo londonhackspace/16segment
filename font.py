@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, serial, time, random
+import sys, serial, time, random, os
 import readline
 from sixteensegfont import font
 
@@ -124,13 +124,26 @@ if __name__ == "__main__":
                 k = ' '
             font[k] = int(bin, 2)
         f.close()
-        
+
     dev = "/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_74137363737351B0F0D1-if00"
-    
-    s = serial.Serial(dev, 9600)
+    if os.path.exists(dev):
+        s = serial.Serial(dev, 9600)
+    else:
+        class NotSerial:
+            def write(self, text):
+                print text
+
+            def inWaiting(self):
+                return 0
+            
+            def read(self):
+                return
+                
+        s = NotSerial()
 
     def message(str):
         for c in str:
+            seg_char(font[c])
             s.write("w" + mangle(font[c]))
             time.sleep(0.5)
 
@@ -174,6 +187,7 @@ if __name__ == "__main__":
             s.write("w" + mangle(c))
         elif line.startswith('a'):
             for c in [chr(c) for c in range(ord(' '), 127)]:
+                seg_char(font[c])
                 s.write("w" + mangle(font[c]))
                 time.sleep(0.75)
         elif line.startswith('b'):
