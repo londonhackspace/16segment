@@ -46,9 +46,12 @@ void shift(void);
 // init the shift registers to all 0's
 void shift_clear(void) {
   int i;
+
   digitalWrite(CLOCK, LOW);  
+  delayMicroseconds(1);
 
   digitalWrite(DATA, LOW);
+  delayMicroseconds(1);
   
   for (i = 0 ; i < 16 ; i++) {
     digitalWrite(CLOCK, HIGH);
@@ -84,17 +87,21 @@ void blank(void) {
   digitalWrite(STROBE, LOW); // no data out (yet)
   delayMicroseconds(1);
 
-  for (i = 0; i < 6 ; i++) {
-    shift_clear();
+  for (i = 0; i < 10 ; i++) {
+//    shift_clear();
+    send_16(0);
+    delayMicroseconds(1);
   }
   delayMicroseconds(1);
 
-  digitalWrite(STROBE, HIGH); // no data out (yet)
+  digitalWrite(STROBE, HIGH); // data out (yet)
+  digitalWrite(OE, HIGH);
+  delayMicroseconds(1);  
+  digitalWrite(OE, LOW);
 
 }
 
 void setup() {                
-  int i, j;
 
   pinMode(OE, OUTPUT); // output enable
   digitalWrite(OE, LOW);  // no output to start with
@@ -117,7 +124,7 @@ void setup() {
   
   digitalWrite(OE, LOW);
   digitalWrite(OE, HIGH); // and now we have an output
-  
+  blank();
 }
 
 #define LOOKING 0
@@ -135,10 +142,12 @@ void loop() {
 
   if (Serial.available() > 0) {
     c = Serial.read();
+    Serial.write(c);
     if (state == LOOKING) {
       switch (c) {
         case 'r':
           blank();
+          digitalWrite(OE, LOW);
           break;
         case 'w':
           state = WRITE;
