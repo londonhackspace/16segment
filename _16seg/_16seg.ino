@@ -97,7 +97,7 @@ void blank(void) {
   digitalWrite(STROBE, HIGH); // data out (yet)
   digitalWrite(OE, HIGH);
   delayMicroseconds(1);  
-  digitalWrite(OE, LOW);
+//  digitalWrite(OE, LOW);
 
 }
 
@@ -147,7 +147,7 @@ void loop() {
       switch (c) {
         case 'r':
           blank();
-          digitalWrite(OE, LOW);
+//          digitalWrite(OE, LOW);
           break;
         case 'w':
           state = WRITE;
